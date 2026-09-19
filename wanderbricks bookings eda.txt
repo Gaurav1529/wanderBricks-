@@ -1,0 +1,70 @@
+
+
+use databricks_wanderbricks_dataset_dais_2025.wanderbricks;
+
+show tables;
+
+select * from bookings limit 10;
+
+describe  bookings;
+
+
+-- size and shape
+
+-- total booking record
+select count(*) from bookings;
+
+select count(booking_id) from bookings;
+
+select count(distinct(user_id)) from bookings;
+
+-- 
+select status, count(booking_id) from bookings group by status;
+
+
+-- actual booking
+select count(booking_id) from bookings;
+
+-- How many properties received bookings
+select distinct(status) from bookings;
+select count(property_id) from bookings where status = 'confirmed' or status = 'completed';
+select status ,count(property_id) from bookings group by status having status = 'confirmed' or status = 'completed';
+
+
+
+-- total revenue by property type
+create or replace temp view properties_type_view as select p.property_type, b.* from properties p join bookings b on b.property_id = b.property_id;
+
+select * from properties_type_view limit 10;
+select property_type, status, round(sum(total_amount),2) as total_revenue from properties_type_view group by property_type, status having status ='completed'; 
+
+-- seasonal trends
+
+-- booking status
+select distinct status from bookings;
+
+select status, count(*) as booking_count
+from bookings
+group by status
+order by booking_count desc;
+
+-- what time period does booking data cover?
+select min(created_at) as first_booking, max(created_at) as latest_booking
+from bookings;
+
+-- stay duration
+select datediff(check_out, check_in) from bookings;
+
+-- avg guest count by property type/ season
+select property_type, round(avg(guests_count),0) as avg_guests from properties_type_view group by property_type; 
+
+-- booking amount
+select property_type, round(avg(total_amount),0) as avg_guests from properties_type_view group by property_type; 
+
+-- reapeat booking behaiviar
+select user_id, count(*) as total_count from bookings group by user_id order by total_count desc limit 50;
+
+-- property performance
+select property_id, avg(total_amount) as avgtotalAmount, case when avg(total_amount) > (select avg(total_amount) from bookings) then "Good" else "bad" end as performance
+from bookings
+group by property_id;
